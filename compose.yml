@@ -1,0 +1,51 @@
+version: "3.8"
+services:
+    ipfs:
+        container_name: ipfs
+        image: "ipfs/kubo"
+        restart: unless-stopped
+        volumes:
+            - ipfs_path:/data/ipfs
+            - ipfs_fuse:/ipfs
+            - ipns_fuse:/ipns
+        environment:
+            - IPFS_PATH=/data/ipfs
+        ports:
+            - 4001:4001/tcp
+            - 4001:4001/udp
+            - 127.0.0.1:5001:5001
+            - 127.0.0.1:8080:8080
+    pg-chainlink:
+        container_name: pg-chainlink
+        image: "postgres"
+        restart: unless-stopped
+        ports:
+            - "5432:5432"
+        env_file:
+            - "database.env"
+        volumes:
+            - "~/data:/var/lib/postgressql/data/"
+    rpc-failover:
+        restart: unless-stopped
+        container_name: rpc-failover
+        image: "fiews/cl-eth-failover"
+        command: "wss://goerli.infura.io/ws/v3/<api-key>"
+        ports:
+          - "4000:4000"
+    link-main-node:
+        container_name: link-main-node
+        restart: unless-stopped
+        image: "smartcontract/chainlink:2.16.0"
+        ports:
+          - "6688:6688"
+        volumes:
+          - "~/.chainlink:/chainlink"
+        command: "local n -p /chainlink/.password -a /chainlink/.api"
+        depends_on:
+            - "pg-chainlink"
+            - "rpc-failover"
+        network_mode: "host"
+volumes:
+   ipfs_path:
+   ipfs_fuse:
+   ipns_fuse:
