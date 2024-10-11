@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-// TFI: make contract upgradeable
+// HPC: make contract upgradeable
 import "@chainlink/contracts/src/v0.7/AuthorizedReceiver.sol";
 import "./vendor/LinkTokenReceiver.sol";
 import "./vendor/ConfirmedOwnerUpgradeable.sol";
@@ -13,7 +13,7 @@ import "./vendor/AddressUpgradeable.sol";
 import "@chainlink/contracts/src/v0.7/vendor/SafeMathChainlink.sol";
 
 /** Truflation changes
-/** search for TFI for the places where there are changes */
+/** search for HPC for the places where there are changes */
 /** use internal initializer as the contract uses 0.7.0 */
 /** linkToken no longer immutable */
 /** use AddressUpgradeable to remove delegateCall */
@@ -23,7 +23,7 @@ import "@chainlink/contracts/src/v0.7/vendor/SafeMathChainlink.sol";
  * @title The Chainlink Operator contract
  * @notice Node operators can deploy this contract to fulfill requests sent to them
  */
-contract TfiOperator is AuthorizedReceiver,
+contract HpcOperator is AuthorizedReceiver,
 ConfirmedOwnerUpgradeable, LinkTokenReceiver,
 OperatorInterface, WithdrawalInterface {
   using AddressUpgradeable for address;
@@ -54,7 +54,7 @@ OperatorInterface, WithdrawalInterface {
   mapping(address => bool) private s_owned;
   // Tokens sent for requests that have not been fulfilled yet
   uint256 private s_tokensInEscrow;
-  // TFI
+  // HPC
   mapping(bytes32 => uint256) private s_refunds;
 
   event OracleRequest(
@@ -94,7 +94,7 @@ OperatorInterface, WithdrawalInterface {
    * @return Type and version string
    */
   function typeAndVersion() external pure virtual returns (string memory) {
-    return "Operator/TFI 1.0.0";
+    return "Operator/HPC 1.0.0";
   }
 
   /**
@@ -401,7 +401,7 @@ OperatorInterface, WithdrawalInterface {
     // solhint-disable-next-line not-rely-on-time
     require(expiration <= block.timestamp, "Request is not expired");
 
-    // TFI
+    // HPC
     delete s_refunds[requestId];
     delete s_commitments[requestId];
     emit CancelOracleRequest(requestId);
@@ -432,7 +432,7 @@ OperatorInterface, WithdrawalInterface {
     require(expiration <= block.timestamp, "Request is not expired");
 
     delete s_commitments[requestId];
-    // TFI
+    // HPC
     delete s_refunds[requestId];
     emit CancelOracleRequest(requestId);
 
@@ -505,7 +505,7 @@ OperatorInterface, WithdrawalInterface {
     bytes31 paramsHash = _buildParamsHash(payment, callbackAddress, callbackFunctionId, expiration);
     require(s_commitments[requestId].paramsHash == paramsHash, "Params do not match request ID");
     require(s_commitments[requestId].dataVersion <= _safeCastToUint8(dataVersion), "Data versions must match");
-    // TFI
+    // HPC
     s_tokensInEscrow = s_tokensInEscrow.sub(payment).add(s_refunds[requestId]);
     delete s_commitments[requestId];
   }
@@ -576,7 +576,7 @@ OperatorInterface, WithdrawalInterface {
     _;
   }
 
-  // TFI addition
+  // HPC addition
   modifier validateMultiWordResponseId2(bytes32 requestId, bytes calldata data) {
     require(data.length >= 32, "Response must be > 32 bytes");
     bytes32 firstDataWord;
@@ -627,7 +627,7 @@ OperatorInterface, WithdrawalInterface {
     _;
   }
 
-  //TFI -----
+  //HPC -----
 
   function proposeRefund(
     bytes32 requestId,
@@ -641,7 +641,7 @@ OperatorInterface, WithdrawalInterface {
     s_refunds[requestId] = refund;
   }
 
-  // TFI
+  // HPC
   /**
    * @notice Called by the Chainlink node to fulfill requests with multi-word support
    * @dev Given params must hash back to the commitment stored from `oracleRequest`.

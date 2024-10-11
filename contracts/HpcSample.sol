@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
-import "./TfiClient.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/OperatorInterface.sol";
+import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
+import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
-
-contract TfiExample is Initializable, OwnableUpgradeable, TfiClient {
+contract HpcSample is ChainlinkClient, ConfirmedOwner {
     using Chainlink for Chainlink.Request;
     bytes public result;
     mapping(bytes32 => bytes) public results;
@@ -15,14 +12,10 @@ contract TfiExample is Initializable, OwnableUpgradeable, TfiClient {
     string public jobId;
     uint256 public fee;
 
-    function initialize(
-      address oracleId_,
-      string memory jobId_,
-      uint256 fee_,
-      address token_) public initializer {
-        __Ownable_init();
-        __TfiClient_init();
-        setChainlinkToken(token_);
+    constructor(address oracleId_, string memory jobId_,
+                uint256 fee_,
+		address token_) ConfirmedOwner(msg.sender) {
+	setChainlinkToken(token_);
         oracleId = oracleId_;
         jobId = jobId_;
         fee = fee_;
@@ -73,6 +66,7 @@ contract TfiExample is Initializable, OwnableUpgradeable, TfiClient {
         results[_requestId] = bytesData;
     }
 
+
     function changeOracle(address _oracle) public onlyOwner {
         oracleId = _oracle;
     }
@@ -93,20 +87,22 @@ contract TfiExample is Initializable, OwnableUpgradeable, TfiClient {
         return chainlinkTokenAddress();
     }
 
-    function getChainlinkToken() public view returns (address) {
-        return getToken();
-    }
-
     function withdrawLink() public onlyOwner {
         LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
             require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
+  }
+    /** Use a function like this if you want to process the item
+        as int256 */
+
+    function getInt256(bytes32 _requestId) public view returns (int256) {
+       return toInt256(results[_requestId]);
     }
 
-    function typeAndVersion() external pure virtual returns (string memory) {
-        return "TFI 0.2";
-    }
+    function toInt256(bytes memory _bytes) internal pure
+      returns (int256 value) {
+          assembly {
+            value := mload(add(_bytes, 0x20))
+      }
+   }
 
-    // do not allow renouncing ownership
-    function renounceOwnership() public view override onlyOwner {
-    }
 }

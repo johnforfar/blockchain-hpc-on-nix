@@ -10,14 +10,14 @@ import "@chainlink/contracts/src/v0.8/interfaces/PointerInterface.sol";
 import {ENSResolver as ENSResolver_Chainlink} from "@chainlink/contracts/src/v0.8/vendor/ENSResolver.sol";
 
 /**
- * @title The TfiClient contract
+ * @title The HpcClient contract
  * @notice Contract writers can inherit this contract in order to create requests for the
  * Chainlink network
  *
- * Must call __TfiClient_init() in upgradeable contracts
+ * Must call __HpcClient_init() in upgradeable contracts
  */
 
-abstract contract TfiClient {
+abstract contract HpcClient {
   using Chainlink for Chainlink.Request;
 
   uint256 internal constant LINK_DIVISIBILITY = 10**18;
@@ -40,7 +40,7 @@ abstract contract TfiClient {
   event ChainlinkFulfilled(bytes32 indexed id);
   event ChainlinkCancelled(bytes32 indexed id);
 
-  function __TfiClient_init() public {
+  function __HpcClient_init() public {
     s_requestCount = 1;
   }
 
