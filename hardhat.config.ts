@@ -1,5 +1,7 @@
 import type { HardhatUserConfig } from "hardhat/config";
+import '@openzeppelin/hardhat-upgrades'
 import "@nomicfoundation/hardhat-toolbox-viem";
+require("@nomiclabs/hardhat-web3");
 
 const config: HardhatUserConfig = {
   solidity: {

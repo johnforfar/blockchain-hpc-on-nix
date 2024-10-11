@@ -2,14 +2,14 @@ pragma solidity ^0.4.11;
 import "./vendor/ERC677Token.sol";
 import { StandardToken as linkStandardToken } from "./vendor/StandardToken.sol";
 
-contract TruflationToken is linkStandardToken, ERC677Token {
+contract HpcToken is linkStandardToken, ERC677Token {
 
   uint public constant totalSupply = 10**26; // 100 million tokens
-  string public constant name = "Truflation";
+  string public constant name = "Hpc";
   uint8 public constant decimals = 18;
-  string public constant symbol = "TFI";
+  string public constant symbol = "HPC";
 
-  function TruflationToken()
+  function HpcToken()
     public
   {
     balances[msg.sender] = totalSupply;
