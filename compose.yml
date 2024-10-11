@@ -39,7 +39,7 @@ services:
         ports:
           - "6688:6688"
         volumes:
-          - "~/.chainlink:/chainlink"
+          - "./chainlink-password:/chainlink/.password"
         command: "local n -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"
