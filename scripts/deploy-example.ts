@@ -1,17 +1,18 @@
 // deploy upgradeable client
 
 import { ethers, upgrades } from 'hardhat'
-import { getConfig } from '../config'
 
-const address = getConfig()
 async function main (): void {
+  const token_hpc = process.env.TOKEN_HPC
+  const jobid_hpc = process.env.JOBID_HPC
+  const operator_hpc = process.env.OPERATOR_HPC
   const name = 'HpcExample'
   const contract = await ethers.getContractFactory(name)
   const inst = await upgrades.deployProxy(contract, [
-    address.operator_hpc,
-    address.jobid_hpc,
+    operator_hpc,
+    jobid_hpc,
     '100000000000000000',
-    address.token_hpc
+    token_hpc
   ])
 
   await inst.waitForDeployment()
