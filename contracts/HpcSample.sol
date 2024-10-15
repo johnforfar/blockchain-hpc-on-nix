@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
-import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
+import "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 
 contract HpcSample is ChainlinkClient, ConfirmedOwner {
     using Chainlink for Chainlink.Request;
