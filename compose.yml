@@ -55,6 +55,7 @@ services:
         depends_on:
             - "pg-chainlink"
             - "rpc-failover"
+            - "hardhat"
 volumes:
    ipfs_path:
    ipfs_fuse:
