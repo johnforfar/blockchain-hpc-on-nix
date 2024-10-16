@@ -20,7 +20,7 @@ cleanup_and_exit() {
     pgrep -P $$ | xargs kill
 }
 
-(npx hardhat node) &
+(npx hardhat node --hostname 0.0.0.0) &
 
 echo "node started waiting...."
 sleep 3

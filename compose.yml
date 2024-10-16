@@ -21,6 +21,8 @@ services:
             context: .
             dockerfile: Dockerfile
         command: bash ./scripts/initialize-testnet.sh
+        ports:
+          - "8545:8545"
     pg-chainlink:
         container_name: pg-chainlink
         image: "postgres"
