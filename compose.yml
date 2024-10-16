@@ -41,16 +41,18 @@ services:
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
-        image: "smartcontract/chainlink:2.16.0"
+        image: "smartcontract/chainlink:2.17.0"
         ports:
           - "6688:6688"
         volumes:
           - "./chainlink-password:/chainlink/.password"
-        command: "local n -p /chainlink/.password -a /chainlink/.api"
+          - "./secrets.toml:/chainlink/secrets.toml"
+          - "./config.toml:/chainlink/config.toml"
+          - "./chainlink-api:/chainlink/.api"
+        command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"
             - "rpc-failover"
-        network_mode: "host"
 volumes:
    ipfs_path:
    ipfs_fuse:

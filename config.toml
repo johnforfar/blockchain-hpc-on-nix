@@ -1,0 +1,18 @@
+[Log]
+Level = 'warn'
+
+[WebServer]
+AllowOrigins = '\*'
+SecureCookies = false
+
+[WebServer.TLS]
+HTTPSPort = 0
+
+[[EVM]]
+ChainID = '31337'
+
+[[EVM.Nodes]]
+Name = 'Hardhat'
+WSURL = 'ws://hardhat:8545'
+HTTPURL = 'http://hardhat:8545'
+
