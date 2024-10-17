@@ -9,7 +9,7 @@ contract HpcToken is linkStandardToken, ERC677Token {
   uint8 public constant decimals = 18;
   string public constant symbol = "HPC";
 
-  function HpcToken()
+  constructor()
     public
   {
     balances[msg.sender] = totalSupply;
