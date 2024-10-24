@@ -6,15 +6,18 @@ async function main (): void {
     const contractAddress = process.env.EXAMPLE_CONTRACT
     const name = 'HpcExample'
     const HpcExample = await ethers.getContractFactory(name)
-    const hpcExample = HpcExample.attach(contractAddress);
-    console.log(await hpcExample.getToken())
+    const hpcExample = HpcExample.attach(contractAddress)
+    const address = await hpcExample.getToken()
+    console.log(address)
+    const tx = await hpcExample.changeToken(address)
+    /*
     const tx = await hpcExample.doRequest(
 	"test",
 	"test",
 	"test",
 	"test",
 	"test"
-    )
+    ) */
     await tx.wait()
 }
 

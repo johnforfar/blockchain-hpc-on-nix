@@ -40,6 +40,11 @@ services:
         command: "wss://goerli.infura.io/ws/v3/<api-key>"
         ports:
           - "4000:4000"
+    executor:
+        container_name: executor
+        build:
+            context: modules/executor
+            dockerfile: Dockerfile
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
