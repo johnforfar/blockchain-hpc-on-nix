@@ -56,6 +56,7 @@ services:
           - "./secrets.toml:/chainlink/secrets.toml"
           - "./config.toml:/chainlink/config.toml"
           - "./chainlink-api:/chainlink/.api"
+          - "./modules:/chainlink/modules"
         command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"
