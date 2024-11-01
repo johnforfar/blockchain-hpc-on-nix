@@ -32,7 +32,7 @@ services:
         env_file:
             - "database.env"
         volumes:
-            - "./data:/var/lib/postgressql/data/"
+            - "pg_data:/var/lib/postgressql/data/"
     rpc-failover:
         restart: unless-stopped
         container_name: rpc-failover
@@ -66,3 +66,5 @@ volumes:
    ipfs_path:
    ipfs_fuse:
    ipns_fuse:
+   pg_data:
+
