@@ -1,0 +1,17 @@
+type = "directrequest"
+schemaVersion = 1
+name = ""
+evmChainID = 31337
+maxTaskDuration = "0s"
+externalJobID = "1abe1f86-7c23-492b-861c-a128b53e72bb"
+contractAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+minContractPaymentLinkJuels = "0"
+observationSource = """
+fetch [type="bridge" name="executor" requestData="$(jobRun)"]
+tx0 [type="jsonparse" data="$(fetch)" path="tx0"]
+tx1 [type="jsonparse" data="$(fetch)" path="tx1"]
+submit_tx0  [type="ethtx" to="0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0" data="$(tx0)" minConfirmations="1"]
+submit_tx1  [type="ethtx" to="0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0" data="$(tx1)"]
+
+fetch -> tx0 -> tx1 -> submit_tx0 -> submit_tx1
+"""

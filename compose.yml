@@ -45,6 +45,10 @@ services:
         build:
             context: modules/executor
             dockerfile: Dockerfile
+#    quantraserver:
+#        container_name: quantraserver
+#        build:
+#            context: https://github.com/joequant/quantraserver.git
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
@@ -57,6 +61,7 @@ services:
           - "./config.toml:/chainlink/config.toml"
           - "./chainlink-api:/chainlink/.api"
           - "./modules:/chainlink/modules"
+          - "./chainnode:/chainlink/chainnode"
         command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"
