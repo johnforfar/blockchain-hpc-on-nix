@@ -9,15 +9,13 @@ async function main (): void {
     const hpcExample = HpcExample.attach(contractAddress)
     const address = await hpcExample.getToken()
     console.log(address)
-    const tx = await hpcExample.changeToken(address)
-    /*
     const tx = await hpcExample.doRequest(
 	"test",
 	"test",
 	"test",
 	"test",
 	"test"
-    ) */
+    )
     await tx.wait()
 }
 
