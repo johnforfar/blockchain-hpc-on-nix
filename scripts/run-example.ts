@@ -9,12 +9,13 @@ async function main (): void {
     const hpcExample = HpcExample.attach(contractAddress)
     const address = await hpcExample.getToken()
     console.log(address)
-    const tx = await hpcExample.doRequest(
+    const tx = await hpcExample.doTransferAndRequest(
 	"test",
 	"test",
 	"test",
-	"test",
-	"test"
+	"cbor",
+	"10000000000000000000",
+	BigInt("10000000000000000")
     )
     await tx.wait()
 }
