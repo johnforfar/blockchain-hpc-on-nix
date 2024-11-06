@@ -45,10 +45,11 @@ services:
         build:
             context: modules/executor
             dockerfile: Dockerfile
-#    quantraserver:
-#        container_name: quantraserver
-#        build:
-#            context: https://github.com/joequant/quantraserver.git
+    quantragrpc:
+        image: "joequant/quantragrpc:latest"
+        container_name: quantragrpc
+        build:
+            context: https://github.com/joequant/quantragrpc.git
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
