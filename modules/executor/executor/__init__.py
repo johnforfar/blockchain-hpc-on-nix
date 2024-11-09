@@ -7,11 +7,14 @@ import requests
 import eth_utils
 import cbor2
 import eth_abi
-from flask import Flask, request, jsonify
-from tfi_orders.fees import get_fee
+import uvicorn
+from fastapi import Request, FastAPI
 
-app = Flask(__name__)
+from executor.fees import get_fee
+
+app = FastAPI()
 api_adapter = os.getenv('TRUFLATION_API_HOST', 'http://api-adapter:8081')
+logger = logging.getLogger('uvicorn.error')
 
 def decode_response(content):
     content_str =  content.decode('utf-8') if hasattr(content, 'decode') \
@@ -38,20 +41,20 @@ def refund_address(obj, default):
         refund_addr = default
     return refund_addr
 
-@app.route("/hello")
+@app.get("/hello")
 def hello_world():
     return "<h2>Hello, World!</h2>"
 
 
 def process_request_api1(content, handler):
-    app.logger.debug(content)
+    logger.debug(content)
     oracle_request = content['meta']['oracleRequest']
     log_data = oracle_request['data']
     request_id = oracle_request['requestId']
     payment = int(oracle_request['payment'])
     cbor_bytes = bytes.fromhex("bf" + log_data[2:] + "ff")
     obj = cbor2.loads(cbor_bytes)
-    app.logger.debug(obj)
+    logger.debug(obj)
     encode_tx = None
     encode_large = None
     fee = get_fee(obj)
@@ -108,37 +111,39 @@ def process_request_api1(content, handler):
             from_hex(request_id),
             from_hex(refund_addr)
         ])
-    return jsonify({
+    return {
         "tx0": encode_tx,
         "tx1": process_refund
-    })
+    }
 
 
-@app.route("/api1", methods=['POST'])
-def api1():
+@app.post("/api1")
+async def api1(request: Request):
     def handler(obj):
+        if obj['service'] == 'ping':
+            return obj['data']
         r = requests.post(api_adapter, json=obj)
         return r.content
-    return process_request_api1(request.json, handler)
+    return process_request_api1(await request.json(), handler)
 
 
-@app.route("/api1-test", methods=['POST'])
-def api1_test():
+@app.post("/api1-test")
+async def api1_test(request: Request):
     def handler(obj):
         return obj.get('data', '')
-    return process_request_api1(request.json, handler)
+    return process_request_api1(await request.json(), handler)
 
 
-@app.route("/api0", methods=['POST'])
-def api0():
-    content = request.json
-    app.logger.debug(content)
+@app.post("/api0")
+async def api0(request: Request):
+    content = await request.json()
+    logger.debug(content)
     oracle_request = content['meta']['oracleRequest']
     log_data = oracle_request['data']
     request_id = oracle_request['requestId']
     b = bytes.fromhex("bf" + log_data[2:] + "ff")
     o = cbor2.loads(b)
-    app.logger.debug(o)
+    logger.debug(o)
     r = requests.post(api_adapter, json=o)
     encode_large = encode_abi(
         ['bytes32', 'bytes'],
@@ -154,25 +159,18 @@ def api0():
             int(oracle_request['cancelExpiration']),
             encode_large
         ])
-    app.logger.debug(encode_tx)
+    logger.debug(encode_tx)
     return encode_tx
 
 
-@app.route("/api-adapter", methods=['POST'])
-def process_api_adapter():
-    content = request.json
+@app.post("/api-adapter")
+async def process_api_adapter(request: Request):
+    content = await request.json()
     r = requests.post(api_adapter, json=content)
     return r.content
 
-if os.getenv('TFI_ORDERS_LOCAL_LOGLEVEL') is None:
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers = gunicorn_logger.handlers
-    app.logger.setLevel(gunicorn_logger.level)
-else:
-    app.logger.setLevel(os.getenv('TFI_ORDERS_LOCAL_LOGLEVEL'))
-
-app.logger.info(f'Connecting to adapter at {api_adapter}')
-
-
 def create_app():
     return app
+
+if __name__ == "__main__":
+    uvicorn.run(app, host='0.0.0.0', log_level="debug")

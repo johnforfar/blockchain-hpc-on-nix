@@ -1,14 +1,15 @@
 [project]
-name = "tfi_orders"
+name = "executor"
 version = "0.0.1"
 dependencies = [
     "eth_abi >= 3.0.1",
     "eth_utils",
-    "flask",
-    "gunicorn",
+    "uvicorn",
     "pytest",
     "cbor2",
     "requests",
+    "fastapi",
+    "httpx",
     "eth-hash[pycryptodome]"
 ]
 
