@@ -61,10 +61,10 @@ services:
         ports:
           - "6688:6688"
         volumes:
-          - "./chainlink-password:/chainlink/.password"
-          - "./secrets.toml:/chainlink/secrets.toml"
-          - "./config.toml:/chainlink/config.toml"
-          - "./chainlink-api:/chainlink/.api"
+          - "./chainlink/password:/chainlink/.password"
+          - "./chainlink/secrets.toml:/chainlink/secrets.toml"
+          - "./chainlink/config.toml:/chainlink/config.toml"
+          - "./chainlink/api:/chainlink/.api"
           - "./modules:/chainlink/modules"
           - "./chainnode:/chainlink/chainnode"
         command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
