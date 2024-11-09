@@ -18,9 +18,9 @@ async function main (): void {
     const fee = BigInt("10000000000000000")
     const tx1 = await hpcToken.approve(contractAddress, fee)
     const tx = await hpcExample.doTransferAndRequest(
-	"test",
-	"test",
-	"test",
+	"ping",
+	"{}",
+	"",
 	"cbor",
 	"10000000000000000000",
 	fee
