@@ -1,19 +1,33 @@
 { pkgs, lib ? pkgs.lib }:
 let
-  hardhat-src = ../hardhat-app;
+  isAarch64Darwin = pkgs.stdenv.system == "aarch64-darwin";
+  isx86Darwin = pkgs.stdenv.system == "x86_64-darwin";
+  isLinux = pkgs.stdenv.isLinux;
+
+  # Create a hardhat config override
+  hardhatConfigOverride = ''
+    module.exports = {
+      solc: {
+        version: "native",
+        optimizer: {
+          enabled: true,
+          runs: 200
+        }
+      },
+      networks: {
+        hardhat: {
+          chainId: 31337
+        }
+      }
+    };
+  '';
 in
 pkgs.buildNpmPackage {
   pname = "xnode-blockchain-hpc";
   version = "1.0.0";
-  
-  src = pkgs.runCommand "hardhat-app-src" {} ''
-    cp -r ${hardhat-src} $out
-    chmod -R +w $out
-    cp ${hardhat-src}/package-lock.json $out/package-lock.json
-    cp ${hardhat-src}/package.json $out/package.json
-  '';
+  src = ../hardhat-app;
 
-  npmDepsHash = "sha256-0000000000000000000000000000000000000000000=";
+  npmDepsHash = "sha256-WdydJ8kPJ2I45EAgxqp7Fz6UoAwVjZLXnLoLc8B4qy0=";
   npmFlags = [ "--legacy-peer-deps" ];
   makeCacheWritable = true;
 
@@ -21,13 +35,32 @@ pkgs.buildNpmPackage {
     docker
     docker-compose
     nodejs_20
-    solc
     python3
+    solc
   ];
 
+  HARDHAT_OFFLINE = "true";
+  HARDHAT_TELEMETRY_OPTOUT = "1";
+
+  # Override the build phase to handle offline compilation
   buildPhase = ''
     mkdir -p .hardhat
-    npm run build
+
+    # Create hardhat config override for offline mode
+    cat > hardhat.config.override.js << EOF
+    ${hardhatConfigOverride}
+    EOF
+
+    # Create wrapper script for hardhat that uses our config
+    cat > hardhat-wrapper.js << EOF
+    #!/usr/bin/env node
+    process.env.HARDHAT_CONFIG = require('path').resolve(__dirname, 'hardhat.config.override.js');
+    require('hardhat/internal/cli/cli');
+    EOF
+    chmod +x hardhat-wrapper.js
+
+    # Run the build using our wrapper
+    node hardhat-wrapper.js compile --config hardhat.config.override.js
   '';
 
   installPhase = ''
