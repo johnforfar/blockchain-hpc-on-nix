@@ -6,40 +6,37 @@
     systems.url = "github:nix-systems/default";
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      systems,
-    }:
+  outputs = { self, nixpkgs, systems }:
     let
-      # A helper that helps us define the attributes below for
-      # all systems we care about.
-      eachSystem =
-        f:
-        nixpkgs.lib.genAttrs (import systems) (
-          system:
-          f {
-            inherit system;
-            pkgs = nixpkgs.legacyPackages.${system};
-          }
-        );
+      eachSystem = f: nixpkgs.lib.genAttrs (import systems) (
+        system: f {
+          inherit system;
+          pkgs = nixpkgs.legacyPackages.${system};
+        }
+      );
     in
     {
-      packages = eachSystem (
-        { pkgs, ... }:
-        {
-          default = pkgs.callPackage ./nix/package.nix { };
-        }
-      );
+      packages = eachSystem ({ pkgs, ... }: {
+        default = pkgs.callPackage ./nix/package.nix { };
+        xnode-blockchain-hpc = pkgs.callPackage ./nix/package.nix { };  # Add this line
+      });
 
-      checks = eachSystem (
-        { pkgs, system, ... }:
-        {
-          package = self.packages.${system}.default;
-          nixos-module = pkgs.callPackage ./nix/nixos-test.nix { };
-        }
-      );
+      # Keep your existing apps configuration
+      apps = eachSystem ({ system, ... }: {
+        default = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/xnode-blockchain-hpc";
+        };
+        reset-testnet = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/reset-testnet";
+        };
+      });
+
+      checks = eachSystem ({ pkgs, system, ... }: {
+        package = self.packages.${system}.default;
+        nixos-module = pkgs.callPackage ./nix/nixos-test.nix { };
+      });
 
       nixosModules.default = ./nix/nixos-module.nix;
     };
