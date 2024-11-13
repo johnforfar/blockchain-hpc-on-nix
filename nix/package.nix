@@ -1,27 +1,4 @@
 { pkgs, lib ? pkgs.lib }:
-let
-  isAarch64Darwin = pkgs.stdenv.system == "aarch64-darwin";
-  isx86Darwin = pkgs.stdenv.system == "x86_64-darwin";
-  isLinux = pkgs.stdenv.isLinux;
-
-  # Create a hardhat config override
-  hardhatConfigOverride = ''
-    module.exports = {
-      solc: {
-        version: "native",
-        optimizer: {
-          enabled: true,
-          runs: 200
-        }
-      },
-      networks: {
-        hardhat: {
-          chainId: 31337
-        }
-      }
-    };
-  '';
-in
 pkgs.buildNpmPackage {
   pname = "xnode-blockchain-hpc";
   version = "1.0.0";
@@ -31,53 +8,34 @@ pkgs.buildNpmPackage {
   npmFlags = [ "--legacy-peer-deps" ];
   makeCacheWritable = true;
 
+  # Copy node_modules and build files, but don't run build during Nix build
+  dontBuild = true;
+
   nativeBuildInputs = with pkgs; [
     docker
     docker-compose
     nodejs_20
     python3
-    solc
+    yarn
   ];
-
-  HARDHAT_OFFLINE = "true";
-  HARDHAT_TELEMETRY_OPTOUT = "1";
-
-  # Override the build phase to handle offline compilation
-  buildPhase = ''
-    mkdir -p .hardhat
-
-    # Create hardhat config override for offline mode
-    cat > hardhat.config.override.js << EOF
-    ${hardhatConfigOverride}
-    EOF
-
-    # Create wrapper script for hardhat that uses our config
-    cat > hardhat-wrapper.js << EOF
-    #!/usr/bin/env node
-    process.env.HARDHAT_CONFIG = require('path').resolve(__dirname, 'hardhat.config.override.js');
-    require('hardhat/internal/cli/cli');
-    EOF
-    chmod +x hardhat-wrapper.js
-
-    # Run the build using our wrapper
-    node hardhat-wrapper.js compile --config hardhat.config.override.js
-  '';
 
   installPhase = ''
     runHook preInstall
 
     mkdir -p $out/{share,bin}
+    
+    # Copy entire app including node_modules
     cp -r . $out/share/hardhat-app/
+    
+    # Make scripts executable
     chmod +x $out/share/hardhat-app/scripts/*.sh
 
-    makeWrapper ${pkgs.nodejs}/bin/npx $out/bin/xnode-blockchain-hpc \
-      --add-flags "hardhat node" \
-      --set HARDHAT_NETWORK "localhost" \
-      --set PORT "3000" \
-      --set HOSTNAME "0.0.0.0" \
-      --prefix PATH : ${lib.makeBinPath [ pkgs.docker pkgs.docker-compose pkgs.solc ]} \
-      --set NODE_PATH "$out/share/hardhat-app/node_modules"
+    # Create a wrapped docker-compose command that includes env vars
+    makeWrapper ${pkgs.docker-compose}/bin/docker-compose $out/bin/xnode-blockchain-hpc \
+      --add-flags "--project-directory $out/share/hardhat-app up" \
+      --chdir "$out/share/hardhat-app"
 
+    # Create wrapper for reset-testnet that preserves cwd
     makeWrapper ${pkgs.bash}/bin/bash $out/bin/reset-testnet \
       --add-flags "$out/share/hardhat-app/scripts/reset-testnet.sh" \
       --prefix PATH : ${lib.makeBinPath [ 
@@ -85,10 +43,21 @@ pkgs.buildNpmPackage {
         pkgs.docker-compose 
         pkgs.nodejs 
         pkgs.yarn
-      ]}
+      ]} \
+      --chdir "$out/share/hardhat-app"
 
-    mkdir -p $out/share/hardhat-app/.hardhat
-    ln -s /var/cache/hardhat-app $out/share/hardhat-app/.hardhat/cache
+    # Create convenience wrappers for npm scripts
+    makeWrapper ${pkgs.yarn}/bin/yarn $out/bin/hardhat-build \
+      --add-flags "build" \
+      --chdir "$out/share/hardhat-app"
+
+    makeWrapper ${pkgs.yarn}/bin/yarn $out/bin/hardhat-test \
+      --add-flags "test" \
+      --chdir "$out/share/hardhat-app"
+
+    makeWrapper ${pkgs.yarn}/bin/yarn $out/bin/hardhat-lint \
+      --add-flags "lint" \
+      --chdir "$out/share/hardhat-app"
 
     runHook postInstall
   '';
@@ -97,5 +66,7 @@ pkgs.buildNpmPackage {
 
   meta = {
     mainProgram = "xnode-blockchain-hpc";
+    description = "Blockchain HPC with Hardhat and Chainlink";
+    platforms = pkgs.lib.platforms.unix;
   };
 }
