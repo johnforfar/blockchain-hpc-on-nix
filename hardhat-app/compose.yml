@@ -36,12 +36,10 @@ services:
     rpc-failover:
         restart: unless-stopped
         container_name: rpc-failover
-        build:
-            context: modules/rpc-failover
-            dockerfile: Dockerfile.multiarch
+        image: "rpc-failover:latest"
         command: "wss://goerli.infura.io/ws/v3/<api-key>"
         ports:
-        - "4000:4000"
+          - "4000:4000"
     executor:
         container_name: executor
         build:
@@ -53,24 +51,20 @@ services:
             - "8000:8000"
     quantragrpc:
         container_name: quantragrpc
-        build:
-            context: https://github.com/joequant/quantragrpc.git
-            dockerfile: Dockerfile.multiarch
+        image: "quantragrpc:latest"
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
-        build:
-            context: modules/chainlink
-            dockerfile: Dockerfile.multiarch
+        image: "chainlink-node:latest"
         ports:
-        - "6688:6688"
+          - "6688:6688"
         volumes:
-        - "./chainlink/password:/chainlink/.password"
-        - "./chainlink/secrets.toml:/chainlink/secrets.toml"
-        - "./chainlink/config.toml:/chainlink/config.toml"
-        - "./chainlink/api:/chainlink/.api"
-        - "./modules:/chainlink/modules"
-        - "./chainnode:/chainlink/chainnode"
+          - "./chainlink/password:/chainlink/.password"
+          - "./chainlink/secrets.toml:/chainlink/secrets.toml"
+          - "./chainlink/config.toml:/chainlink/config.toml"
+          - "./chainlink/api:/chainlink/.api"
+          - "./modules:/chainlink/modules"
+          - "./chainnode:/chainlink/chainnode"
         command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"
