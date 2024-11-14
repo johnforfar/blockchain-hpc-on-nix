@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1.4
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git bash
+
+WORKDIR /app
+
+# Clone the repository and install dependencies
+RUN git clone https://github.com/joequant/quantragrpc.git . && \
+    git submodule update --init --recursive
+
+# Install dependencies
+RUN yarn install --frozen-lockfile --network-timeout 1000000
+
+# Create final image
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy built application from builder
+COPY --from=builder /app .
+
+# Install production dependencies only
+RUN yarn install --production --frozen-lockfile --network-timeout 1000000
+
+EXPOSE 50051
+
+# Start the application
+CMD ["yarn", "start"]

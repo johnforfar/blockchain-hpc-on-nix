@@ -2,7 +2,6 @@ version: "3.8"
 services:
     ipfs:
         container_name: ipfs
-        # Latest kubo image supports multi-arch
         image: "ipfs/kubo:latest"
         restart: unless-stopped
         volumes:
@@ -26,7 +25,6 @@ services:
           - "8545:8545"
     pg-chainlink:
         container_name: pg-chainlink
-        # Official postgres supports multi-arch
         image: "postgres:latest"
         restart: unless-stopped
         ports:
@@ -52,14 +50,13 @@ services:
         ports:
             - "8000:8000"
     quantragrpc:
-        image: "joequant/quantragrpc:latest"
         container_name: quantragrpc
         build:
             context: https://github.com/joequant/quantragrpc.git
+            dockerfile: Dockerfile.multiarch
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
-        # Chainlink supports multi-arch from 2.0.0+
         image: "smartcontract/chainlink:2.17.0"
         ports:
           - "6688:6688"
