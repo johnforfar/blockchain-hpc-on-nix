@@ -1,0 +1,62 @@
+FROM --platform=$BUILDPLATFORM node:20-alpine AS base
+
+# Install build dependencies
+RUN apk add --no-cache git bash
+
+WORKDIR /app
+
+# Create minimal eth failover script
+COPY <<-'EOF' /app/package.json
+{
+  "name": "cl-eth-failover",
+  "version": "1.0.0",
+  "dependencies": {
+    "web3": "^4.2.0",
+    "ws": "^8.14.2"
+  }
+}
+EOF
+
+COPY <<-'EOF' /app/index.js
+const WebSocket = require('ws');
+const Web3 = require('web3');
+
+const server = new WebSocket.Server({ port: 4000 });
+let web3;
+
+const initWeb3 = (url) => {
+  web3 = new Web3(url);
+  console.log(`Connected to ${url}`);
+};
+
+server.on('connection', (ws) => {
+  ws.on('message', async (message) => {
+    try {
+      const request = JSON.parse(message.toString());
+      const response = await web3.currentProvider.send(request);
+      ws.send(JSON.stringify(response));
+    } catch (error) {
+      ws.send(JSON.stringify({
+        id: null,
+        error: { message: error.message }
+      }));
+    }
+  });
+});
+
+const rpcUrl = process.argv[2];
+if (!rpcUrl) {
+  console.error('Please provide RPC URL as argument');
+  process.exit(1);
+}
+
+initWeb3(rpcUrl);
+console.log('RPC Failover running on port 4000');
+EOF
+
+# Install dependencies
+RUN yarn install
+
+EXPOSE 4000
+
+ENTRYPOINT ["node", "index.js"]

@@ -36,10 +36,12 @@ services:
     rpc-failover:
         restart: unless-stopped
         container_name: rpc-failover
-        image: "fiews/cl-eth-failover:latest"
+        build:
+            context: modules/rpc-failover
+            dockerfile: Dockerfile.multiarch
         command: "wss://goerli.infura.io/ws/v3/<api-key>"
         ports:
-          - "4000:4000"
+        - "4000:4000"
     executor:
         container_name: executor
         build:
@@ -57,16 +59,18 @@ services:
     link-main-node:
         container_name: link-main-node
         restart: unless-stopped
-        image: "smartcontract/chainlink:2.17.0"
+        build:
+            context: modules/chainlink
+            dockerfile: Dockerfile.multiarch
         ports:
-          - "6688:6688"
+        - "6688:6688"
         volumes:
-          - "./chainlink/password:/chainlink/.password"
-          - "./chainlink/secrets.toml:/chainlink/secrets.toml"
-          - "./chainlink/config.toml:/chainlink/config.toml"
-          - "./chainlink/api:/chainlink/.api"
-          - "./modules:/chainlink/modules"
-          - "./chainnode:/chainlink/chainnode"
+        - "./chainlink/password:/chainlink/.password"
+        - "./chainlink/secrets.toml:/chainlink/secrets.toml"
+        - "./chainlink/config.toml:/chainlink/config.toml"
+        - "./chainlink/api:/chainlink/.api"
+        - "./modules:/chainlink/modules"
+        - "./chainnode:/chainlink/chainnode"
         command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"

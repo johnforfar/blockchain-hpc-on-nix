@@ -2,6 +2,25 @@
 
 This project demonstrates blockchain distributed computation using Chainlink. The system initializes a local blockchain that distributes work across various nodes.
 
+## Prerequisites
+
+- Nix package manager with flakes enabled
+- Docker
+- Docker Compose
+
+## Quick Start
+
+```bash
+# Build required multi-arch services (needed for ARM64/x86)
+make build
+
+# Start the application
+make run
+
+# Reset and initialize a clean testnet
+make reset
+```
+
 ## Development Setup
 
 ### Using Nix (Recommended)
@@ -31,12 +50,17 @@ EXAMPLE_CONTRACT=0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 npx hardhat run scri
 .
 ├── hardhat-app/          # Main application code
 │   ├── contracts/        # Solidity smart contracts
-│   ├── scripts/          # Deployment and utility scripts
-│   └── test/            # Contract test files
-├── nix/                  # Nix configuration files
-│   ├── package.nix      # Build and deployment configuration
-│   └── nixos-module.nix # NixOS service module
-└── flake.nix            # Nix flake configuration
+│   ├── modules/          # Service modules
+│   │   ├── chainlink/   # Chainlink node service
+│   │   ├── executor/    # Executor service
+│   │   ├── quantragrpc/ # Quantra gRPC service
+│   │   └── rpc-failover/# RPC failover service
+│   ├── scripts/         # Deployment and utility scripts
+│   └── test/           # Contract test files
+├── nix/                 # Nix configuration files
+│   ├── package.nix     # Build and deployment configuration
+│   └── nixos-module.nix# NixOS service module
+└── flake.nix           # Nix flake configuration
 ```
 
 ## Components
@@ -45,13 +69,17 @@ EXAMPLE_CONTRACT=0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9 npx hardhat run scri
 - **Chainlink**: Decentralized oracle network
 - **Docker**: Container runtime for local testnet
 - **Nix**: Reproducible build and deployment system
+- **Executor**: Python-based job execution service
+- **RPC Failover**: Redundancy service for RPC endpoints
+- **Quantra gRPC**: ML model inference service
 
 ## Local Development
 
 1. Ensure you have Nix installed with flakes enabled
 2. Clone the repository
-3. Run `nix run .#reset-testnet` to initialize the environment
-4. Use `nix run` to start the application
+3. Build required services: `make build`
+4. Run `nix run .#reset-testnet` to initialize the environment
+5. Use `nix run` or `make run` to start the application
 
 ## Testing
 

@@ -19,10 +19,10 @@ esac
 echo "Detected architecture: $CURRENT_ARCH"
 echo "Building for platform: $TARGET_PLATFORM"
 
-# Build only for current architecture
+# Build for current architecture
 docker buildx build \
   --platform $TARGET_PLATFORM \
-  --tag quantragrpc:latest \
+  --tag chainlink-node:latest \
   --file Dockerfile.multiarch \
   --load \
   .

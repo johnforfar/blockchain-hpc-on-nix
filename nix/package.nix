@@ -17,7 +17,13 @@ pkgs.buildNpmPackage {
     nodejs_20
     python3
     yarn
+    gnumake    # Added for make commands
   ];
+
+  # Add pre-build step
+  preBuild = ''
+    make build || true
+  '';
 
   installPhase = ''
     runHook preInstall
@@ -29,6 +35,7 @@ pkgs.buildNpmPackage {
     
     # Make scripts executable
     chmod +x $out/share/hardhat-app/scripts/*.sh
+    chmod +x $out/share/hardhat-app/modules/*/build.sh
 
     # Create a wrapped docker-compose command that includes env vars
     makeWrapper ${pkgs.docker-compose}/bin/docker-compose $out/bin/xnode-blockchain-hpc \
@@ -43,6 +50,7 @@ pkgs.buildNpmPackage {
         pkgs.docker-compose 
         pkgs.nodejs 
         pkgs.yarn
+        pkgs.gnumake
       ]} \
       --chdir "$out/share/hardhat-app"
 
@@ -57,6 +65,17 @@ pkgs.buildNpmPackage {
 
     makeWrapper ${pkgs.yarn}/bin/yarn $out/bin/hardhat-lint \
       --add-flags "lint" \
+      --chdir "$out/share/hardhat-app"
+
+    # Create make command wrapper
+    makeWrapper ${pkgs.gnumake}/bin/make $out/bin/blockchain-make \
+      --prefix PATH : ${lib.makeBinPath [
+        pkgs.docker
+        pkgs.docker-compose
+        pkgs.nodejs
+        pkgs.yarn
+        pkgs.gnumake
+      ]} \
       --chdir "$out/share/hardhat-app"
 
     runHook postInstall
