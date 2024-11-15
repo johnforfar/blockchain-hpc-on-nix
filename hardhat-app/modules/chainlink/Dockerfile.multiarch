@@ -1,3 +1,5 @@
+FROM --platform=$BUILDPLATFORM smartcontract/chainlink:2.17.0 AS chainlink
+
 FROM --platform=$BUILDPLATFORM node:20-alpine
 
 WORKDIR /chainlink
@@ -5,9 +7,9 @@ WORKDIR /chainlink
 # Install system dependencies
 RUN apk add --no-cache bash postgresql-client
 
-# Copy required files
-COPY . .
+# Copy chainlink binary from official image
+COPY --from=chainlink /usr/local/bin/chainlink /usr/local/bin/chainlink
 
 EXPOSE 6688
 
-ENTRYPOINT ["chainlink"]
+ENTRYPOINT ["/usr/local/bin/chainlink"]

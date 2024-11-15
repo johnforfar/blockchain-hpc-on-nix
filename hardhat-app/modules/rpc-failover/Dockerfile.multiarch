@@ -19,7 +19,7 @@ EOF
 
 COPY <<-'EOF' /app/index.js
 const WebSocket = require('ws');
-const Web3 = require('web3');
+const { Web3 } = require('web3');
 
 const server = new WebSocket.Server({ port: 4000 });
 let web3;
@@ -33,7 +33,7 @@ server.on('connection', (ws) => {
   ws.on('message', async (message) => {
     try {
       const request = JSON.parse(message.toString());
-      const response = await web3.currentProvider.send(request);
+      const response = await web3.currentProvider.request(request);
       ws.send(JSON.stringify(response));
     } catch (error) {
       ws.send(JSON.stringify({

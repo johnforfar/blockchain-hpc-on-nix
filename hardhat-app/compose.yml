@@ -37,6 +37,7 @@ services:
         restart: unless-stopped
         container_name: rpc-failover
         image: "rpc-failover:latest"
+        platform: linux/arm64
         command: "wss://goerli.infura.io/ws/v3/<api-key>"
         ports:
           - "4000:4000"
@@ -56,16 +57,12 @@ services:
         container_name: link-main-node
         restart: unless-stopped
         image: "chainlink-node:latest"
+        platform: linux/arm64
         ports:
           - "6688:6688"
         volumes:
-          - "./chainlink/password:/chainlink/.password"
-          - "./chainlink/secrets.toml:/chainlink/secrets.toml"
-          - "./chainlink/config.toml:/chainlink/config.toml"
-          - "./chainlink/api:/chainlink/.api"
-          - "./modules:/chainlink/modules"
-          - "./chainnode:/chainlink/chainnode"
-        command: "node  -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
+          - chainlink_config:/chainlink
+        command: "node -config /chainlink/config.toml -secrets /chainlink/secrets.toml start -p /chainlink/.password -a /chainlink/.api"
         depends_on:
             - "pg-chainlink"
             - "rpc-failover"
@@ -75,3 +72,4 @@ volumes:
    ipfs_fuse:
    ipns_fuse:
    pg_data:
+   chainlink_config:
