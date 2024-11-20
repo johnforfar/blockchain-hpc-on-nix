@@ -1,14 +1,95 @@
-FROM --platform=$BUILDPLATFORM smartcontract/chainlink:2.17.0 AS chainlink
+FROM --platform=$BUILDPLATFORM golang:1.22-bullseye AS builder
 
-FROM --platform=$BUILDPLATFORM node:20-alpine
+# Set architecture-specific environment variables first (these rarely change)
+ENV GOARCH=arm64 \
+    GOOS=linux \
+    CGO_ENABLED=1 \
+    GOPATH=/go \
+    PATH=$PATH:/go/bin:/usr/local/go/bin \
+    GOPROXY="https://goproxy.cn,https://proxy.golang.org,direct" \
+    GOSUMDB=off \
+    GO111MODULE=on \
+    CC=aarch64-linux-gnu-gcc \
+    CXX=aarch64-linux-gnu-g++
+
+# Install base dependencies (create a separate layer for apt packages)
+RUN dpkg --add-architecture arm64 && \
+    apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    curl \
+    gnupg \
+    python2 \
+    python3 \
+    python3-pip \
+    jq \
+    bash \
+    wget \
+    software-properties-common \
+    apt-transport-https \
+    ca-certificates \
+    crossbuild-essential-arm64 \
+    gcc-aarch64-linux-gnu \
+    g++-aarch64-linux-gnu \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js in a separate layer
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install global npm packages in a separate layer
+RUN npm install -g npm@latest pnpm@latest solc@0.8.6 && \
+    echo '#!/usr/bin/env node' > /usr/local/bin/solc && \
+    echo "const solcjs = require('/usr/local/lib/node_modules/solc/solcjs');" > /usr/local/bin/solc && \
+    chmod +x /usr/local/bin/solc && \
+    ln -s /usr/local/lib/node_modules/solc/solcjs /usr/local/bin/solcjs
 
 WORKDIR /chainlink
 
-# Install system dependencies
-RUN apk add --no-cache bash postgresql-client
+# Copy package files first to leverage cache for dependencies
+COPY chainlink-source/contracts/package.json chainlink-source/contracts/pnpm-lock.yaml ./contracts/
 
-# Copy chainlink binary from official image
-COPY --from=chainlink /usr/local/bin/chainlink /usr/local/bin/chainlink
+# Install node dependencies (will be cached if package files don't change)
+RUN cd contracts && pnpm install
+
+# Copy only the solidity contracts first
+COPY chainlink-source/contracts/src ./contracts/src/
+
+# Pre-compile solidity files and cache the results
+RUN cd contracts && \
+    mkdir -p solc/v0.8.6 && \
+    find src -name "*.sol" -exec solcjs --bin --abi --optimize-runs 1000000 --overwrite -o solc/v0.8.6 {} \;
+
+# Copy the rest of the source code
+COPY chainlink-source/ .
+
+# Install Go tools for ARM64
+RUN go install -v github.com/smartcontractkit/gencodec@latest && \
+    go install -v github.com/vektra/mockery/v2@v2.43.2 && \
+    go install -v github.com/jmank88/gomods@v0.1.4
+
+# Download Go dependencies
+RUN go mod download -x
+
+# Build the chainlink binary
+RUN go build -v -o /go/bin/chainlink ./core/
+
+# Final stage
+FROM --platform=$TARGETPLATFORM debian:bullseye-slim
+
+WORKDIR /chainlink
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    bash \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /go/bin/chainlink /usr/local/bin/
+RUN chmod +x /usr/local/bin/chainlink && \
+    mkdir -p /chainlink
 
 EXPOSE 6688
 

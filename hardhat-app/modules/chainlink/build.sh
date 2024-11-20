@@ -1,7 +1,6 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
-# Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
@@ -16,15 +15,46 @@ case $CURRENT_ARCH in
     *)         TARGET_PLATFORM="linux/amd64" ;;
 esac
 
-echo "Detected architecture: $CURRENT_ARCH"
-echo "Building for platform: $TARGET_PLATFORM"
+echo "Building chainlink-node for $TARGET_PLATFORM..."
+echo "Step 1/4: Cleaning Docker cache..."
+docker builder prune -f --filter type=exec.cachemount >/dev/null 2>&1
 
-# Build for current architecture
+echo "Step 2/4: Preparing build environment..."
+# Create a timestamp for build tracking
+timestamp=$(date +%s)
+echo "Build started at: $(date)"
+
+echo "Step 3/4: Building image..."
+# Build with progress tracking
 docker buildx build \
-  --platform $TARGET_PLATFORM \
-  --tag chainlink-node:latest \
-  --file Dockerfile.multiarch \
-  --load \
-  .
+    --platform $TARGET_PLATFORM \
+    --tag chainlink-node:latest \
+    --file Dockerfile.multiarch \
+    --load \
+    --build-context chainlink-source=./chainlink-source \
+    --network=host \
+    --build-arg BUILDPLATFORM=$TARGET_PLATFORM \
+    --build-arg TARGETPLATFORM=$TARGET_PLATFORM \
+    --progress=plain \
+    . 2>&1 | tee /tmp/build_${timestamp}.log | grep -E '^#[0-9]+\s+(ERROR|DONE|\[builder|\[stage).*$|^ERROR:.*$|error:.*$' | grep -v "DONE 0.0s" | grep -v "CACHED"
 
-echo "Build complete!"
+# Check build status
+exit_code=${PIPESTATUS[0]}
+
+echo "Step 4/4: Finalizing build..."
+if [ $exit_code -ne 0 ]; then
+    echo "❌ Build failed after $(($(date +%s) - timestamp)) seconds"
+    echo "Last 10 lines of build log:"
+    tail -n 10 /tmp/build_${timestamp}.log
+    rm /tmp/build_${timestamp}.log
+    exit $exit_code
+fi
+
+echo "✅ Build completed successfully in $(($(date +%s) - timestamp)) seconds"
+rm /tmp/build_${timestamp}.log
+
+# Display image details if build successful
+if [ $exit_code -eq 0 ]; then
+    echo "Image details:"
+    docker images chainlink-node:latest
+fi

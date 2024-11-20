@@ -1,5 +1,8 @@
-# syntax=docker/dockerfile:1.4
 FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+
+# Set environment variables
+ENV NODE_ENV=production \
+    PATH=/usr/local/bin:$PATH
 
 # Install build dependencies
 RUN apk add --no-cache git bash
@@ -14,17 +17,19 @@ RUN git clone https://github.com/joequant/quantragrpc.git . && \
 RUN yarn install --frozen-lockfile --network-timeout 1000000
 
 # Create final image
-FROM node:20-alpine
+FROM --platform=$TARGETPLATFORM node:20-alpine
+
+# Set environment variables for production
+ENV NODE_ENV=production \
+    PATH=/usr/local/bin:$PATH
 
 WORKDIR /app
 
-# Copy built application from builder
-COPY --from=builder /app .
-
-# Install production dependencies only
-RUN yarn install --production --frozen-lockfile --network-timeout 1000000
+# Copy all files from builder stage directly
+COPY --from=builder /app /app/
 
 EXPOSE 50051
 
-# Start the application
-CMD ["yarn", "start"]
+# Set the entrypoint to yarn
+ENTRYPOINT ["yarn"]
+CMD ["start"]
